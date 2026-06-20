@@ -12,9 +12,11 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import type { PluginInput } from "@opencode-ai/plugin"
 
-// ── 调试日志（写入临时目录） ──
+// 调试日志（写入临时目录，默认关闭，设 OPENCODE_UTF8_DEBUG=1 开启）
+const DEBUG = process.env.OPENCODE_UTF8_DEBUG === "1"
 const LOG = join(tmpdir(), "utf8-plugin.log")
 function flog(msg: string) {
+  if (!DEBUG) return
   try { appendFileSync(LOG, `[${new Date().toISOString()}] ${msg}\n`, "utf8") } catch {}
 }
 
