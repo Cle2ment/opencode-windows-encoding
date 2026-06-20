@@ -10,6 +10,7 @@
 import { appendFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import type { PluginInput } from "@opencode-ai/plugin"
 
 // ── 调试日志（写入临时目录） ──
 const LOG = join(tmpdir(), "utf8-plugin.log")
@@ -28,17 +29,17 @@ function stripSetPrefixes(cmd: string): { prefixes: string; cleanCmd: string } {
   return { prefixes: "", cleanCmd: cmd }
 }
 
-export const Utf8EncodingPlugin = async () => {
+export const Utf8EncodingPlugin = async (_input: PluginInput) => {
   flog("=== LOADED ===")
 
   return {
-    "tool.execute.before": async (input: Record<string, unknown>, output: Record<string, unknown>) => {
+    "tool.execute.before": async (input: { tool: string; sessionID: string; callID: string }, output: { args: any }) => {
       const tool = String(input?.tool ?? "")
       flog(`[tool.before] tool="${tool}"`)
 
       if (tool !== "bash" && tool !== "shell") return
 
-      const args = output?.args as Record<string, unknown> | undefined
+      const args = output.args
       if (!args) { flog("  no args"); return }
 
       const cmd = args.command
@@ -58,3 +59,5 @@ export const Utf8EncodingPlugin = async () => {
     },
   }
 }
+
+export default Utf8EncodingPlugin
