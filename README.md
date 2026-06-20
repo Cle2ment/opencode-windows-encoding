@@ -1,4 +1,4 @@
-# opencode-windows-encoding
+# Opencode Windows Encoding
 
 [![npm version](https://img.shields.io/npm/v/opencode-windows-encoding)](https://www.npmjs.com/package/opencode-windows-encoding)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
@@ -52,11 +52,10 @@ Or with a specific version:
 ```
 
 After adding the plugin, restart OpenCode. All subsequent shell commands will use UTF-8 encoding automatically.
-After adding the plugin, restart OpenCode. All subsequent shell commands will use UTF-8 encoding automatically.
 
-## 本地使用（复制即用）
+## Local Usage (Copy & Go)
 
-本项目是单文件插件，`src/utf8-encoding.ts` 可以直接复制到 OpenCode 插件目录使用，零依赖：
+This is a single-file plugin. Copy `src/utf8-encoding.ts` directly to OpenCode's plugins directory — no dependencies required:
 
 **PowerShell:**
 ```powershell
@@ -68,9 +67,9 @@ Copy-Item src/utf8-encoding.ts $env:USERPROFILE/.config/opencode/plugins/utf8-en
 cp src/utf8-encoding.ts ~/.config/opencode/plugins/utf8-encoding.ts
 ```
 
-重启 OpenCode 即生效。无需 `npm install`，无需构建。
+Restart OpenCode to apply. No `npm install`, no build step.
 
-`src/utf8-encoding.ts` 仅使用 Node.js 内置模块（`node:fs`, `node:os`, `node:path`），无任何 npm 依赖。
+`src/utf8-encoding.ts` uses only Node.js built-ins (`node:fs`, `node:os`, `node:path`) — zero npm dependencies.
 ## Requirements
 
 - **OpenCode** (any recent version with plugin support)
@@ -93,10 +92,9 @@ npm run typecheck
 npm run dev
 ```
 
-### 本地开发测试
+### Local Development Testing
 
-直接引用源码即可：
-
+Reference the source file directly:
 ```jsonc
 {
   "plugin": [
