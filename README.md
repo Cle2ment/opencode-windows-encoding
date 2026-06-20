@@ -53,6 +53,23 @@ Or with a specific version:
 
 After adding the plugin, restart OpenCode. All subsequent shell commands will use UTF-8 encoding automatically.
 
+## 本地使用（复制即用）
+
+本项目是单文件插件，`src/utf8-encoding.ts` 可以直接复制到 OpenCode 插件目录使用，零依赖：
+
+**PowerShell:**
+```powershell
+Copy-Item src/utf8-encoding.ts $env:USERPROFILE/.config/opencode/plugins/utf8-encoding.ts
+```
+
+**Bash / WSL:**
+```bash
+cp src/utf8-encoding.ts ~/.config/opencode/plugins/utf8-encoding.ts
+```
+
+重启 OpenCode 即生效。无需 `npm install`，无需构建。
+
+`src/utf8-encoding.ts` 仅使用 Node.js 内置模块（`node:fs`, `node:os`, `node:path`），无任何 npm 依赖。
 ## Requirements
 
 - **OpenCode** (any recent version with plugin support)
@@ -75,24 +92,14 @@ npm run typecheck
 npm run dev
 ```
 
-### Local plugin testing
+### 本地开发测试
 
-To test locally without publishing, reference the build output in your `opencode.jsonc`:
-
-```jsonc
-{
-  "plugin": [
-    "/path/to/opencode-windows-encoding/dist/index.js"
-  ]
-}
-```
-
-Or reference the TypeScript source directly:
+直接引用源码即可：
 
 ```jsonc
 {
   "plugin": [
-    "/path/to/opencode-windows-encoding/src/index.ts"
+    "/path/to/opencode-windows-encoding/src/utf8-encoding.ts"
   ]
 }
 ```

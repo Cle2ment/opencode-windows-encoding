@@ -1,27 +1,38 @@
-import type { Plugin } from "@opencode-ai/plugin"
+/**
+ * OpenCode Plugin — UTF-8 Encoding Fix for Windows + PowerShell
+ *
+ * 单文件插件，可直接复制到 ~/.config/opencode/plugins/ 使用，无需 npm install。
+ *
+ * 工作原理：拦截所有 bash/shell 工具调用，在命令前注入 PowerShell
+ * UTF-8 编码配置，解决 Windows 下中文/非 ASCII 字符乱码问题。
+ */
+
 import { appendFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
+// ── 调试日志（写入临时目录） ──
 const LOG = join(tmpdir(), "utf8-plugin.log")
 function flog(msg: string) {
   try { appendFileSync(LOG, `[${new Date().toISOString()}] ${msg}\n`, "utf8") } catch {}
 }
 
-export const Utf8EncodingPlugin: Plugin = async () => {
+// ── PowerShell UTF-8 编码前缀 ──
+const UTF8_ENC =
+  "[Console]::OutputEncoding=[Console]::InputEncoding=[Text.Encoding]::UTF8;$OutputEncoding=[Text.Encoding]::UTF8;"
+
+/** 提取 opencode 在命令前追加的 set VAR="value" && 前缀 */
+function stripSetPrefixes(cmd: string): { prefixes: string; cleanCmd: string } {
+  const m = cmd.match(/^((?:set\s+\w+="[^"]*"\s*&&\s*)+)/)
+  if (m) return { prefixes: m[1], cleanCmd: cmd.slice(m[1].length) }
+  return { prefixes: "", cleanCmd: cmd }
+}
+
+export const Utf8EncodingPlugin = async () => {
   flog("=== LOADED ===")
 
-  function stripSetPrefixes(cmd: string): { prefixes: string; cleanCmd: string } {
-    const m = cmd.match(/^((?:set\s+\w+="[^"]*"\s*&&\s*)+)/)
-    if (m) return { prefixes: m[1], cleanCmd: cmd.slice(m[1].length) }
-    return { prefixes: "", cleanCmd: cmd }
-  }
-
-  const UTF8_ENC = "[Console]::OutputEncoding=[Console]::InputEncoding=[Text.Encoding]::UTF8;$OutputEncoding=[Text.Encoding]::UTF8;"
-
   return {
-    // ── LLM 工具调用 (bash/shell) ──
-    "tool.execute.before": async (input, output) => {
+    "tool.execute.before": async (input: Record<string, unknown>, output: Record<string, unknown>) => {
       const tool = String(input?.tool ?? "")
       flog(`[tool.before] tool="${tool}"`)
 
@@ -39,10 +50,11 @@ export const Utf8EncodingPlugin: Plugin = async () => {
       const { prefixes, cleanCmd } = stripSetPrefixes(cmd)
       flog(`  orig: ${cleanCmd.slice(0, 120)}`)
 
+      // 防止重复注入
       if (cleanCmd.includes("OutputEncoding")) { flog("  skip (idempotent)"); return }
 
       args.command = prefixes + UTF8_ENC + cleanCmd
-      flog(`  INJECTED`)
+      flog("  INJECTED")
     },
   }
 }

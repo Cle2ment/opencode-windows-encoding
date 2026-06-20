@@ -1,14 +1,14 @@
 {
   "name": "opencode-windows-encoding",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "OpenCode plugin to fix UTF-8 encoding issues in PowerShell on Windows",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/utf8-encoding.js",
+  "types": "./dist/utf8-encoding.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./dist/utf8-encoding.d.ts",
+      "import": "./dist/utf8-encoding.js"
     }
   },
   "files": [
@@ -34,9 +34,7 @@
     "url": "git+https://github.com/Cle2ment/opencode-windows-encoding.git"
   },
   "license": "AGPL-3.0",
-  "dependencies": {
-    "@opencode-ai/plugin": "^1.17.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/node": "^22.0.0",
     "tsup": "^8.0.0",
