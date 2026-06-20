@@ -7,3 +7,6 @@ dist/
 .env.local
 .DS_Store
 Thumbs.db
+
+# OpenCode internal
+.omo/
