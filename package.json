@@ -1,6 +1,6 @@
 {
   "name": "opencode-windows-encoding",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "OpenCode plugin to fix UTF-8 encoding issues in PowerShell on Windows",
   "type": "module",
   "main": "./dist/utf8-encoding.js",
