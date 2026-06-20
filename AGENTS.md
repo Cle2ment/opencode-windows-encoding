@@ -8,14 +8,15 @@ OpenCode 插件，在 Windows + PowerShell 7 环境下自动为所有 `bash`/`sh
 
 - **TypeScript** — 源码语言
 - **tsup** — 构建工具（ESM 输出）
+- **Node.js 内置模块** — 零 npm 运行时依赖
+- **tsup** — 构建工具（ESM 输出）
 - **@opencode-ai/plugin** — OpenCode 插件 API
 
 ## 目录结构
 
 ```
 src/
-├── index.ts          # 入口点，导出插件
-└── utf8-encoding.ts  # 插件实现（tool.execute.before hook）
+└── utf8-encoding.ts  # 插件源码（单文件，tool.execute.before hook）
 dist/                 # 构建输出（gitignore）
 ```
 
@@ -39,8 +40,8 @@ npm run typecheck # tsc --noEmit 类型检查
 ## 编码规范
 
 - 使用 `strict` TypeScript 模式
-- 导出遵循 `Plugin` 类型签名的具名导出
-- 最小依赖：仅 `@opencode-ai/plugin`
+- 具名导出 `Utf8EncodingPlugin`
+- 零 npm 运行时依赖（仅使用 Node.js 内置模块）
 - 日志写入 `$TMP/utf8-plugin.log`（调试用，生产无感）
 
 ## 提交规范
@@ -55,5 +56,4 @@ npm run typecheck # tsc --noEmit 类型检查
 
 1. `npm run build` — 构建
 2. `npm version <patch|minor|major>` — 版本号
-3. `npm publish` — 发布到 npm
-4. `git push --follow-tags` — 推送标签
+3. `git push --follow-tags` — 推送标签触发 GitHub Actions 自动发布 npm

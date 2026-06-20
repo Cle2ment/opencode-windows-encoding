@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/opencode-windows-encoding)](https://www.npmjs.com/package/opencode-windows-encoding)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
-OpenCode plugin that fixes UTF-8 encoding issues when executing PowerShell commands on Windows.
+OpenCode plugin that fixes UTF-8 encoding issues when executing PowerShell commands on Windows. Single-file, zero npm dependencies.
 
 ## The Problem
 
@@ -46,11 +46,12 @@ Or with a specific version:
 ```jsonc
 {
   "plugin": [
-    "opencode-windows-encoding@1.0.0"
+    "opencode-windows-encoding@^1.1"
   ]
 }
 ```
 
+After adding the plugin, restart OpenCode. All subsequent shell commands will use UTF-8 encoding automatically.
 After adding the plugin, restart OpenCode. All subsequent shell commands will use UTF-8 encoding automatically.
 
 ## 本地使用（复制即用）
