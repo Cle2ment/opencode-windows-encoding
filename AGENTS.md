@@ -10,7 +10,8 @@ OpenCode 插件，在 Windows + PowerShell 7 环境下自动为所有 `bash`/`sh
 - **tsup** — 构建工具（ESM 输出）
 - **Node.js 内置模块** — 零 npm 运行时依赖
 - **tsup** — 构建工具（ESM 输出）
-- **@opencode-ai/plugin** — OpenCode 插件 API
+- **Node.js 内置模块** — 零 npm 运行时依赖
+- **@opencode-ai/plugin** — OpenCode 插件 API（`import type`，编译期擦除）
 
 ## 目录结构
 
@@ -36,13 +37,13 @@ npm run typecheck # tsc --noEmit 类型检查
 2. 在原命令前注入 `[Console]::OutputEncoding=...` 前缀
 3. 跳过已包含 `OutputEncoding` 的命令（防重复注入）
 4. 保留 `set VAR="value" &&` 前缀顺序
-
+5. 调试日志默认关闭，设 `OPENCODE_UTF8_DEBUG=1` 开启
 ## 编码规范
 
 - 使用 `strict` TypeScript 模式
-- 具名导出 `Utf8EncodingPlugin`
-- 零 npm 运行时依赖（仅使用 Node.js 内置模块）
-- 日志写入 `$TMP/utf8-plugin.log`（调试用，生产无感）
+- 具名导出 `Utf8EncodingPlugin` + `default` 导出
+- 零 npm 运行时依赖（`import type` 编译期擦除）
+- 调试日志写入 `$TMP/utf8-plugin.log`，默认关闭（设 `OPENCODE_UTF8_DEBUG=1` 开启）
 
 ## 提交规范
 

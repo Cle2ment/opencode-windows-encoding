@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/opencode-windows-encoding)](https://www.npmjs.com/package/opencode-windows-encoding)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
-OpenCode plugin that fixes UTF-8 encoding issues when executing PowerShell commands on Windows. Single-file, zero npm dependencies.
+OpenCode plugin that fixes UTF-8 encoding issues when executing PowerShell commands on Windows. Single-file, zero npm runtime dependencies.
 
 ## The Problem
 
@@ -22,6 +22,7 @@ This plugin hooks into OpenCode's `tool.execute.before` event and injects UTF-8 
 - **Idempotent** — skips commands that already contain `OutputEncoding` to avoid duplication
 - **`set` prefix aware** — preserves PowerShell `set VAR="value"` prefixes before injecting
 - **Zero config** — works out of the box with no options
+- **Debug logging off by default** — set `OPENCODE_UTF8_DEBUG=1` to enable diagnostic logging to `$TMP/utf8-plugin.log`
 
 ## Installation
 
@@ -69,7 +70,7 @@ cp src/utf8-encoding.ts ~/.config/opencode/plugins/utf8-encoding.ts
 
 Restart OpenCode to apply. No `npm install`, no build step.
 
-`src/utf8-encoding.ts` uses only Node.js built-ins (`node:fs`, `node:os`, `node:path`) — zero npm dependencies.
+`src/utf8-encoding.ts` uses only Node.js built-ins (`node:fs`, `node:os`, `node:path`) and a compile-time-only `import type` from `@opencode-ai/plugin` — zero npm runtime dependencies.
 ## Requirements
 
 - **OpenCode** (any recent version with plugin support)
