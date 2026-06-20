@@ -21,8 +21,11 @@ function flog(msg: string) {
 }
 
 // ── PowerShell UTF-8 编码前缀 ──
+// Console 编码覆盖所有进程；PYTHONIOENCODING 解决 Python 子进程 I/O 乱码
 const UTF8_ENC =
-  "[Console]::OutputEncoding=[Console]::InputEncoding=[Text.Encoding]::UTF8;$OutputEncoding=[Text.Encoding]::UTF8;"
+  "[Console]::OutputEncoding=[Console]::InputEncoding=[Text.Encoding]::UTF8;" +
+  "$OutputEncoding=[Text.Encoding]::UTF8;" +
+  "$env:PYTHONIOENCODING='utf-8';"
 
 /** 提取 opencode 在命令前追加的 set VAR="value" && 前缀 */
 function stripSetPrefixes(cmd: string): { prefixes: string; cleanCmd: string } {
