@@ -53,7 +53,7 @@ export const Utf8EncodingPlugin = async () => {
       // 防止重复注入
       if (cleanCmd.includes("OutputEncoding")) { flog("  skip (idempotent)"); return }
 
-      args.command = prefixes + UTF8_ENC + cleanCmd
+      args.command = prefixes + UTF8_ENC + "\n" + cleanCmd
       flog("  INJECTED")
     },
   }
