@@ -13,7 +13,7 @@ Instead, report them privately via GitHub's Security Advisory system:
 2. Click **"Report a vulnerability"**
 3. Describe the issue in detail — include steps to reproduce if possible
 
-You can also email [INSERT CONTACT EMAIL] with "SECURITY" in the subject line.
+You can also email yikun.chen@163.com with "SECURITY" in the subject line.
 
 ### What to Expect
 
