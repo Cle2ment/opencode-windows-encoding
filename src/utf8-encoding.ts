@@ -62,10 +62,21 @@ function detectShellKind(shell: string | undefined): ShellKind {
   return process.platform === "win32" ? "pwsh" : "bash"
 }
 
-/** 读取 opencode 配置中的 shell，失败时按平台回退 */
+/** 带超时的 Promise（插件内不引入额外运行时依赖） */
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error("timeout")), ms)
+    p.then(
+      (v) => { clearTimeout(t); resolve(v) },
+      (e) => { clearTimeout(t); reject(e) },
+    )
+  })
+}
+
+/** 读取 opencode 配置中的 shell，失败/超时按平台回退（永不 reject） */
 async function resolveShellKind(client: PluginInput["client"]): Promise<ShellKind> {
   try {
-    const res = await client.config.get()
+    const res = await withTimeout(client.config.get(), 3000)
     const shell = (res.data as unknown as { shell?: string } | undefined)?.shell
     return detectShellKind(shell)
   } catch {
@@ -83,9 +94,11 @@ function stripSetPrefixes(cmd: string): { prefixes: string; cleanCmd: string } {
 export const Utf8EncodingPlugin = async (input: PluginInput) => {
   flog("=== LOADED ===")
 
-  const kind = await resolveShellKind(input.client)
-  const { prefix, sep, marker } = ENC[kind]
-  flog(`shell kind: ${kind}`)
+  // 惰性检测：绝不在插件加载阶段调用 client.config.get()
+  //（会因 httpapi 未就绪 + 请求无超时而永久挂起，导致 opencode 启动死锁）。
+  // 首次 tool hook 触发时再查，结果缓存。
+  let kindPromise: Promise<ShellKind> | null = null
+  const getKind = () => (kindPromise ??= resolveShellKind(input.client))
 
   return {
     "tool.execute.before": async (input: { tool: string; sessionID: string; callID: string }, output: { args: any }) => {
@@ -105,6 +118,10 @@ export const Utf8EncodingPlugin = async (input: PluginInput) => {
 
       const { prefixes, cleanCmd } = stripSetPrefixes(cmd)
       flog(`  orig: ${cleanCmd.slice(0, 120)}`)
+
+      const kind = await getKind()
+      const { prefix, sep, marker } = ENC[kind]
+      flog(`  shell kind: ${kind}`)
 
       // 防止重复注入
       if (cleanCmd.includes(marker)) { flog("  skip (idempotent)"); return }
