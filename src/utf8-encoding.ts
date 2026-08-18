@@ -3,9 +3,9 @@
  *
  * 单文件插件，可直接复制到 ~/.config/opencode/plugins/ 使用，无需 npm install。
  *
- * 工作原理：拦截所有 bash/shell 工具调用，根据 opencode 当前配置的 shell
- * （pwsh / bash / cmd）在命令前注入对应的 UTF-8 编码配置，解决中文/非 ASCII
- * 字符乱码问题。
+ * 工作原理：拦截所有 bash/shell 工具调用，读取 opencode 配置的 shell
+ * （pwsh / bash / cmd），按对应 shell 在命令前注入对应的 UTF-8 编码配置，
+ * 解决中文/非 ASCII 字符乱码问题。未配置 shell 时不注入。
  */
 
 import { appendFileSync } from "node:fs"
@@ -45,21 +45,18 @@ const ENC: Record<ShellKind, { prefix: string; sep: string; marker: string }> = 
   },
 }
 
-/** 由 config.shell 的值归一化为 shell 类型 */
-function detectShellKind(shell: string | undefined): ShellKind {
-  if (shell) {
-    const base = shell
-      .replace(/\\/g, "/")
-      .split("/")
-      .pop()!
-      .toLowerCase()
-      .replace(/\.exe$/, "")
-    if (base === "pwsh" || base === "powershell") return "pwsh"
-    if (base === "cmd") return "cmd"
-    return "bash" // bash / zsh / sh / dash / ksh 等 POSIX shell
-  }
-  // 未配置：按平台回退（opencode Windows 默认优先 pwsh）
-  return process.platform === "win32" ? "pwsh" : "bash"
+/** 由 config.shell 的值归一化为 shell 类型；未配置返回 undefined（不注入） */
+function detectShellKind(shell: string | undefined): ShellKind | undefined {
+  if (!shell) return undefined
+  const base = shell
+    .replace(/\\/g, "/")
+    .split("/")
+    .pop()!
+    .toLowerCase()
+    .replace(/\.exe$/, "")
+  if (base === "pwsh" || base === "powershell") return "pwsh"
+  if (base === "cmd") return "cmd"
+  return "bash" // bash / zsh / sh / dash / ksh 等 POSIX shell
 }
 
 /** 带超时的 Promise（插件内不引入额外运行时依赖） */
@@ -73,14 +70,14 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   })
 }
 
-/** 读取 opencode 配置中的 shell，失败/超时按平台回退（永不 reject） */
-async function resolveShellKind(client: PluginInput["client"]): Promise<ShellKind> {
+/** 读取 opencode 配置中的 shell，失败/超时/未配置返回 undefined（不注入，永不 reject） */
+async function resolveShellKind(client: PluginInput["client"]): Promise<ShellKind | undefined> {
   try {
     const res = await withTimeout(client.config.get(), 3000)
     const shell = (res.data as unknown as { shell?: string } | undefined)?.shell
     return detectShellKind(shell)
   } catch {
-    return detectShellKind(undefined)
+    return undefined
   }
 }
 
@@ -97,7 +94,7 @@ export const Utf8EncodingPlugin = async (input: PluginInput) => {
   // 惰性检测：绝不在插件加载阶段调用 client.config.get()
   //（会因 httpapi 未就绪 + 请求无超时而永久挂起，导致 opencode 启动死锁）。
   // 首次 tool hook 触发时再查，结果缓存。
-  let kindPromise: Promise<ShellKind> | null = null
+  let kindPromise: Promise<ShellKind | undefined> | null = null
   const getKind = () => (kindPromise ??= resolveShellKind(input.client))
 
   return {
@@ -120,6 +117,7 @@ export const Utf8EncodingPlugin = async (input: PluginInput) => {
       flog(`  orig: ${cleanCmd.slice(0, 120)}`)
 
       const kind = await getKind()
+      if (!kind) { flog("  skip (no shell configured)"); return }
       const { prefix, sep, marker } = ENC[kind]
       flog(`  shell kind: ${kind}`)
 
