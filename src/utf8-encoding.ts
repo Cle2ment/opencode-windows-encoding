@@ -1,10 +1,11 @@
 /**
- * OpenCode Plugin — UTF-8 Encoding Fix for Windows + PowerShell
+ * OpenCode Plugin — UTF-8 Encoding Fix for Windows
  *
  * 单文件插件，可直接复制到 ~/.config/opencode/plugins/ 使用，无需 npm install。
  *
- * 工作原理：拦截所有 bash/shell 工具调用，在命令前注入 PowerShell
- * UTF-8 编码配置，解决 Windows 下中文/非 ASCII 字符乱码问题。
+ * 工作原理：拦截所有 bash/shell 工具调用，根据 opencode 当前配置的 shell
+ * （pwsh / bash / cmd）在命令前注入对应的 UTF-8 编码配置，解决中文/非 ASCII
+ * 字符乱码问题。
  */
 
 import { appendFileSync } from "node:fs"
@@ -20,12 +21,57 @@ function flog(msg: string) {
   try { appendFileSync(LOG, `[${new Date().toISOString()}] ${msg}\n`, "utf8") } catch {}
 }
 
-// ── PowerShell UTF-8 编码前缀 ──
-// Console 编码覆盖所有进程；PYTHONIOENCODING 解决 Python 子进程 I/O 乱码
-const UTF8_ENC =
-  "[Console]::OutputEncoding=[Console]::InputEncoding=[Text.Encoding]::UTF8;" +
-  "$OutputEncoding=[Text.Encoding]::UTF8;" +
-  "$env:PYTHONIOENCODING='utf-8';"
+type ShellKind = "pwsh" | "bash" | "cmd"
+
+// ── 各 shell 的 UTF-8 编码前缀与命令分隔符 ──
+const ENC: Record<ShellKind, { prefix: string; sep: string; marker: string }> = {
+  pwsh: {
+    prefix:
+      "[Console]::OutputEncoding=[Console]::InputEncoding=[Text.Encoding]::UTF8;" +
+      "$OutputEncoding=[Text.Encoding]::UTF8;" +
+      "$env:PYTHONIOENCODING='utf-8';",
+    sep: "\n",
+    marker: "OutputEncoding",
+  },
+  bash: {
+    prefix: "export LC_ALL=C.UTF-8; export LANG=C.UTF-8; export PYTHONIOENCODING=utf-8;",
+    sep: "\n",
+    marker: "LC_ALL",
+  },
+  cmd: {
+    prefix: "chcp 65001 >nul",
+    sep: " & ",
+    marker: "chcp",
+  },
+}
+
+/** 由 config.shell 的值归一化为 shell 类型 */
+function detectShellKind(shell: string | undefined): ShellKind {
+  if (shell) {
+    const base = shell
+      .replace(/\\/g, "/")
+      .split("/")
+      .pop()!
+      .toLowerCase()
+      .replace(/\.exe$/, "")
+    if (base === "pwsh" || base === "powershell") return "pwsh"
+    if (base === "cmd") return "cmd"
+    return "bash" // bash / zsh / sh / dash / ksh 等 POSIX shell
+  }
+  // 未配置：按平台回退（opencode Windows 默认优先 pwsh）
+  return process.platform === "win32" ? "pwsh" : "bash"
+}
+
+/** 读取 opencode 配置中的 shell，失败时按平台回退 */
+async function resolveShellKind(client: PluginInput["client"]): Promise<ShellKind> {
+  try {
+    const res = await client.config.get()
+    const shell = (res.data as unknown as { shell?: string } | undefined)?.shell
+    return detectShellKind(shell)
+  } catch {
+    return detectShellKind(undefined)
+  }
+}
 
 /** 提取 opencode 在命令前追加的 set VAR="value" && 前缀 */
 function stripSetPrefixes(cmd: string): { prefixes: string; cleanCmd: string } {
@@ -34,8 +80,12 @@ function stripSetPrefixes(cmd: string): { prefixes: string; cleanCmd: string } {
   return { prefixes: "", cleanCmd: cmd }
 }
 
-export const Utf8EncodingPlugin = async (_input: PluginInput) => {
+export const Utf8EncodingPlugin = async (input: PluginInput) => {
   flog("=== LOADED ===")
+
+  const kind = await resolveShellKind(input.client)
+  const { prefix, sep, marker } = ENC[kind]
+  flog(`shell kind: ${kind}`)
 
   return {
     "tool.execute.before": async (input: { tool: string; sessionID: string; callID: string }, output: { args: any }) => {
@@ -57,9 +107,9 @@ export const Utf8EncodingPlugin = async (_input: PluginInput) => {
       flog(`  orig: ${cleanCmd.slice(0, 120)}`)
 
       // 防止重复注入
-      if (cleanCmd.includes("OutputEncoding")) { flog("  skip (idempotent)"); return }
+      if (cleanCmd.includes(marker)) { flog("  skip (idempotent)"); return }
 
-      args.command = prefixes + UTF8_ENC + "\n" + cleanCmd
+      args.command = prefixes + prefix + sep + cleanCmd
       flog("  INJECTED")
     },
   }
