@@ -35,10 +35,12 @@ npm run dev
 
 ```
 src/
-└── utf8-encoding.ts  # Single-file plugin — all logic lives here
+├── encoding-core.ts  # Shared core — encoding map / shell detection / prefix injection
+├── v1.ts             # V1 entry (tool.execute.before hook)
+└── v2.ts             # V2 entry ({ id, setup } contract, shell create.before hook)
 ```
 
-The plugin is a single TypeScript file. Build output goes to `dist/`.
+Each entry bundles the shared core inline and builds to a self-contained file in `dist/` (`v1.js`, `v2.js`).
 
 ## Code Style
 
@@ -47,7 +49,7 @@ The plugin is a single TypeScript file. Build output goes to `dist/`.
 - **Zero npm runtime dependencies** — the plugin uses only Node.js built-ins
   (`node:fs`, `node:os`, `node:path`). `@opencode-ai/plugin` is `import type`
   only (compile-time, erased from output).
-- Match existing patterns — follow the code already in `src/utf8-encoding.ts`.
+- Match existing patterns — follow the code already in `src/v1.ts`.
 - Debug logging goes to `$TMP/utf8-plugin.log` and is gated behind
   `OPENCODE_UTF8_DEBUG=1`.
 
@@ -68,7 +70,7 @@ Reference the source file directly in your `opencode.jsonc`:
 ```jsonc
 {
   "plugin": [
-    "/path/to/opencode-windows-encoding/src/utf8-encoding.ts"
+    "/path/to/opencode-windows-encoding/src/v1.ts"
   ]
 }
 ```

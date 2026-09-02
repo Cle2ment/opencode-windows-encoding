@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/opencode-windows-encoding)](https://www.npmjs.com/package/opencode-windows-encoding)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
-OpenCode plugin that fixes UTF-8 encoding issues when executing shell commands on Windows. Single-file, zero npm runtime dependencies.
+OpenCode plugin that fixes UTF-8 encoding issues when executing shell commands on Windows. Zero npm runtime dependencies.
 
 ## The Problem
 
@@ -36,13 +36,13 @@ chcp 65001 >nul
 - **Zero config** — works out of the box with no options
 - **Debug logging off by default** — set `OPENCODE_UTF8_DEBUG=1` to enable diagnostic logging to `$TMP/utf8-plugin.log`
 
-## Installation
+## Installation (OpenCode V1)
 
 ```bash
 npm install opencode-windows-encoding
 ```
 
-## Usage
+## Usage (OpenCode V1)
 
 Add the plugin to your `opencode.jsonc`:
 
@@ -66,23 +66,51 @@ Or with a specific version:
 
 After adding the plugin, restart OpenCode. All subsequent shell commands will use UTF-8 encoding automatically.
 
+## OpenCode V2 (opencode2)
+
+OpenCode V2 is in beta and uses a different plugin contract (`{ id, setup }`). This package ships a dedicated V2 line on the npm `beta` dist-tag:
+
+```bash
+opencode plugin add opencode-windows-encoding@beta
+```
+
+Or configure it in `opencode.jsonc`:
+
+```jsonc
+{
+  "plugins": [
+    "opencode-windows-encoding@beta"
+  ]
+}
+```
+
+The V2 build injects the encoding prefix via the `shell create.before` hook. The resolved shell is provided directly on the event (`event.shell`, possibly a full path with `.exe`), so the plugin does not need to read `config.shell`.
+
+> Note: the V2 plugin API is still in beta and its contract may change. If anything breaks after upgrading opencode2, please report it.
+
 ## Local Usage (Copy & Go)
 
-This is a single-file plugin. Copy `src/utf8-encoding.ts` directly to OpenCode's plugins directory — no dependencies required:
+The built V1 plugin is a single self-contained JavaScript file (the shared core is bundled inline). From a clone of this repo:
+
+```bash
+npm install && npm run build
+```
+
+Then copy `dist/v1.js` to OpenCode's plugins directory:
 
 **PowerShell:**
 ```powershell
-Copy-Item src/utf8-encoding.ts $env:USERPROFILE/.config/opencode/plugins/utf8-encoding.ts
+Copy-Item dist/v1.js $env:USERPROFILE/.config/opencode/plugins/utf8-encoding.js
 ```
 
 **Bash / WSL:**
 ```bash
-cp src/utf8-encoding.ts ~/.config/opencode/plugins/utf8-encoding.ts
+cp dist/v1.js ~/.config/opencode/plugins/utf8-encoding.js
 ```
 
-Restart OpenCode to apply. No `npm install`, no build step.
+Restart OpenCode to apply.
 
-`src/utf8-encoding.ts` uses only Node.js built-ins (`node:fs`, `node:os`, `node:path`) and a compile-time-only `import type` from `@opencode-ai/plugin` — zero npm runtime dependencies.
+The built file uses only Node.js built-ins (`node:fs`, `node:os`, `node:path`) and a compile-time-only `import type` from `@opencode-ai/plugin` — zero npm runtime dependencies.
 ## Requirements
 
 - **OpenCode** (any recent version with plugin support)
@@ -111,7 +139,7 @@ Reference the source file directly:
 ```jsonc
 {
   "plugin": [
-    "/path/to/opencode-windows-encoding/src/utf8-encoding.ts"
+    "/path/to/opencode-windows-encoding/src/v1.ts"
   ]
 }
 ```
