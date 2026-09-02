@@ -18,7 +18,8 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "publish:beta": "node scripts/publish-v2.mjs"
   },
   "keywords": [
     "opencode",
