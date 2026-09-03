@@ -18,8 +18,8 @@ OpenCode 插件，在 Windows + PowerShell 7 环境下自动为所有 `bash`/`sh
 ```
 src/
 ├── encoding-core.ts  # 共享核心（编码表 / shell 识别 / 前缀注入，零插件包依赖）
-├── v1.ts             # V1 入口（tool.execute.before hook）
-└── v2.ts             # V2 入口（{ id, setup } 契约，shell create.before hook）
+├── v1.ts             # 主入口：三合一导出 { id, server, setup }（server = V1 tool.execute.before）
+└── v2.ts             # V2 setup（shell create.before；宿主无 shell 域时降级 no-op）
 scripts/
 └── publish-v2.mjs    # beta 版本线发布脚本（manifest 临时指向 dist/v2.js 后 npm publish --tag beta）
 dist/                 # 构建输出（gitignore）
@@ -43,11 +43,13 @@ npm run typecheck # tsc --noEmit 类型检查
 4. 保留 `set VAR="value" &&` 前缀顺序
 5. 调试日志默认关闭，设 `OPENCODE_UTF8_DEBUG=1` 开启
 
-V2 入口（src/v2.ts）使用 `shell create.before` hook，`event.shell` 由 opencode2 直接提供（已解析，可能为全路径/带 .exe），无需读取 client.config.get()。
+V2 setup（src/v2.ts）在含 shell hook 域的宿主上注册 `shell create.before` hook（`event.shell` 已解析，无需读取 client.config.get()）；宿主无 shell 域（如 opencode 1.18.x）时降级 no-op，保证加载不失败、宿主升级后自动生效。
+
+加载器差异（opencode 1.18.x 实测）：npm 包规格与 plugins/ 目录自动发现走新 V2 加载器（要求 default 导出 `{ id, effect | setup }`）；config 内本地路径走旧 V1 加载器（接受裸函数或 `{ server }`，`tool.execute.before` 可用）。v1.ts 的三合一 default 导出因此覆盖全部路径。另：plugins/ 目录的 `.js` 文件在 Windows 上解析不稳定，手动安装需改名为 `.ts`。
 ## 编码规范
 
 - 使用 `strict` TypeScript 模式
-- 具名导出 `Utf8EncodingPlugin` + `default` 导出
+- 具名导出 `Utf8EncodingPlugin`；`default` 导出三合一对象 `{ id, server, setup }`
 - 零 npm 运行时依赖（`import type` 编译期擦除）
 - 调试日志写入 `$TMP/utf8-plugin.log`，默认关闭（设 `OPENCODE_UTF8_DEBUG=1` 开启）
 
@@ -65,7 +67,7 @@ V2 入口（src/v2.ts）使用 `shell create.before` hook，`event.shell` 由 op
 2. `npm version <patch|minor|major>` — 版本号
 3. `git push --follow-tags` — 推送标签触发 GitHub Actions 自动发布 npm
 
-beta 线（OpenCode V2）：
+beta 线（OpenCode V2）——**自 4.1.0 起废弃**：主线 default 导出已含 V2 `setup`，无需独立 beta 线。以下为历史流程存档：
 
 1. `npm version 4.0.0-beta.0 --no-git-tag-version`（首个 beta；后续 beta 用 `npm version prerelease --preid=beta --no-git-tag-version`）
 2. `npm run publish:beta` — 以 `--tag beta` 发布（脚本临时把 manifest 指向 dist/v2.js，发布后自动还原）

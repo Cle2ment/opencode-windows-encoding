@@ -68,25 +68,22 @@ After adding the plugin, restart OpenCode. All subsequent shell commands will us
 
 ## OpenCode V2 (opencode2)
 
-OpenCode V2 is in beta and uses a different plugin contract (`{ id, setup }`). This package ships a dedicated V2 line on the npm `beta` dist-tag:
-
-```bash
-opencode plugin add opencode-windows-encoding@beta
-```
-
-Or configure it in `opencode.jsonc`:
+Since v4.1.0 the main line works on both V1 and V2 hosts — no separate dist-tag is needed:
 
 ```jsonc
 {
-  "plugins": [
-    "opencode-windows-encoding@beta"
+  "plugin": [
+    "opencode-windows-encoding@latest"
   ]
 }
 ```
 
-The V2 build injects the encoding prefix via the `shell create.before` hook. The resolved shell is provided directly on the event (`event.shell`, possibly a full path with `.exe`), so the plugin does not need to read `config.shell`.
+The default export is a combined `{ id, server, setup }` module:
 
-> Note: the V2 plugin API is still in beta and its contract may change. If anything breaks after upgrading opencode2, please report it.
+- **V1 hosts** (opencode ≤ 1.17, or a local path reference on 1.18.x) call `server` and inject via `tool.execute.before`.
+- **V2 hosts** validate `id` + `setup`. The setup registers the `shell create.before` hook on hosts that expose a shell hook domain (contract verified against the opencode dev branch; the resolved shell is provided directly on `event.shell`, so no `config.shell` lookup is needed). On V2 hosts without the shell domain (e.g. opencode 1.18.x) the setup degrades to a no-op — the plugin loads cleanly and activates automatically once the host gains the hook.
+
+> Note: the legacy `beta` dist-tag (`opencode-windows-encoding@beta`) is deprecated — the main line supersedes it.
 
 ## Local Usage (Copy & Go)
 
@@ -96,16 +93,16 @@ The built V1 plugin is a single self-contained JavaScript file (the shared core 
 npm install && npm run build
 ```
 
-Then copy `dist/v1.js` to OpenCode's plugins directory:
+Then copy `dist/v1.js` to OpenCode's plugins directory **with a `.ts` extension** (opencode 1.18.x auto-discovery resolves `.js` files unreliably on Windows; the bundled output is plain ESM JavaScript, which loads fine as `.ts`):
 
 **PowerShell:**
 ```powershell
-Copy-Item dist/v1.js $env:USERPROFILE/.config/opencode/plugins/utf8-encoding.js
+Copy-Item dist/v1.js $env:USERPROFILE/.config/opencode/plugins/utf8-encoding.ts
 ```
 
 **Bash / WSL:**
 ```bash
-cp dist/v1.js ~/.config/opencode/plugins/utf8-encoding.js
+cp dist/v1.js ~/.config/opencode/plugins/utf8-encoding.ts
 ```
 
 Restart OpenCode to apply.
