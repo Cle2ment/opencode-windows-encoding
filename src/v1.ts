@@ -10,6 +10,7 @@
 
 import type { PluginInput } from "@opencode-ai/plugin"
 import { detectShellKind, flog, injectUtf8Prefix, type ShellKind } from "./encoding-core.js"
+import { setup } from "./v2.js"
 
 /** 带超时的 Promise（插件内不引入额外运行时依赖） */
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
@@ -71,4 +72,16 @@ export const Utf8EncodingPlugin = async (input: PluginInput) => {
   }
 }
 
-export default Utf8EncodingPlugin
+/**
+ * 三合一模块导出：
+ * - V1 宿主（含 opencode ≤1.17、1.18.x 本地路径引用）：调用 `server`（V1 裸函数亦可，
+ *   具名导出 Utf8EncodingPlugin 保留）；
+ * - V2 宿主（npm 包规格 / plugins 目录自动发现）：校验 `id` + `setup`，
+ *   1.18.x 无 shell 域时 setup 降级 no-op，未来含 shell hook 的宿主自动启用注入。
+ */
+const pluginModule = {
+  id: "utf8-encoding",
+  server: Utf8EncodingPlugin,
+  setup,
+}
+export default pluginModule
