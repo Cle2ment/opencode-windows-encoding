@@ -80,7 +80,7 @@ export const Utf8EncodingPlugin = async (input: PluginInput) => {
  *   1.18.x 无 shell 域时 setup 降级 no-op，未来含 shell hook 的宿主自动启用注入。
  */
 const pluginModule = {
-  id: "utf8-encoding",
+  id: "windows-encoding",
   server: Utf8EncodingPlugin,
   setup,
 }

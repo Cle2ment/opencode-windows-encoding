@@ -56,7 +56,7 @@ export async function setup(ctx: PluginContextV2) {
 }
 
 const Utf8EncodingPluginV2: PluginV2 = {
-  id: "utf8-encoding",
+  id: "windows-encoding",
   setup,
 }
 export default Utf8EncodingPluginV2
