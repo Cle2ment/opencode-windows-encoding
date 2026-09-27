@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - "v*"
+  # 允许在凭证/发布故障时手动对已有 tag 重跑（npm Trusted Publishing 走 OIDC，无需 secret）
+  workflow_dispatch:
 
 jobs:
   publish:
@@ -16,18 +18,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Node 24 自带 npm 11+，满足 npm Trusted Publishing 所需的 CLI 版本
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
-          registry-url: "https://registry.npmjs.org"
+          node-version: 24
 
       - run: npm ci
 
       - run: npm run build
 
+      # Trusted Publishing：GitHub OIDC token 自动换取短期发布凭证，无需 NPM_TOKEN
       - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
