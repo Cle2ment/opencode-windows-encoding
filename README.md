@@ -3,7 +3,9 @@
 [![npm version](https://img.shields.io/npm/v/opencode-windows-encoding)](https://www.npmjs.com/package/opencode-windows-encoding)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
-OpenCode plugin that fixes UTF-8 encoding issues when executing shell commands on Windows. Zero npm runtime dependencies.
+OpenCode **V2** plugin that fixes UTF-8 encoding issues when executing shell commands on Windows. Zero npm runtime dependencies.
+
+> **v6.0.0 is V2-only.** If you run OpenCode V1 (`opencode` ≤ 1.x), stay on the v5.x line.
 
 ## The Problem
 
@@ -11,7 +13,7 @@ When OpenCode runs shell commands on Windows, the console output encoding defaul
 
 ## How It Works
 
-This plugin hooks into OpenCode's `tool.execute.before` event, detects the configured shell from OpenCode's config (`config.shell`), and injects the matching UTF-8 encoding configuration before every shell command:
+This plugin registers OpenCode V2's `shell create.before` hook. OpenCode passes the already-resolved shell on the event (`event.shell`), and the plugin injects the matching UTF-8 encoding configuration before every shell command:
 
 **PowerShell (`pwsh`):**
 ```powershell
@@ -29,26 +31,26 @@ chcp 65001 >nul
 ```
 
 ### Key behaviors:
-- **Shell auto-detection** — reads `config.shell` from OpenCode at startup; falls back to platform detection (`pwsh` on Windows, `bash` elsewhere) when unset or unavailable
-- **Automatic injection** — applies to all `bash` and `shell` tool calls
+- **Shell auto-detection** — uses the resolved shell from the `create.before` event; no config lookup needed
+- **Automatic injection** — applies to every shell command the agent runs
 - **Idempotent** — skips commands that already contain the shell's encoding marker (`OutputEncoding` / `LC_ALL` / `chcp`) to avoid duplication
-- **`set` prefix aware** — preserves PowerShell `set VAR="value"` prefixes before injecting
+- **`set` prefix aware** — preserves `set VAR="value" &&` prefixes before injecting
 - **Zero config** — works out of the box with no options
 - **Debug logging off by default** — set `OPENCODE_UTF8_DEBUG=1` to enable diagnostic logging to `$TMP/utf8-plugin.log`
 
-## Installation (OpenCode V1)
+## Requirements
 
-```bash
-npm install opencode-windows-encoding
-```
+- **OpenCode V2** — this version requires the V2 plugin API
+- **Windows** (this plugin is designed specifically for Windows encoding issues)
+- **Any of**: PowerShell 7+ (`pwsh`), Bash, or Command Prompt (`cmd`)
 
-## Usage (OpenCode V1)
+## Installation
 
 Add the plugin to your `opencode.jsonc`:
 
 ```jsonc
 {
-  "plugin": [
+  "plugins": [
     "opencode-windows-encoding"
   ]
 }
@@ -58,61 +60,35 @@ Or with a specific version:
 
 ```jsonc
 {
-  "plugin": [
-    "opencode-windows-encoding@^1.1"
+  "plugins": [
+    "opencode-windows-encoding@^6"
   ]
 }
 ```
 
-After adding the plugin, restart OpenCode. All subsequent shell commands will use UTF-8 encoding automatically.
-
-## OpenCode V2 (opencode2)
-
-Since v4.1.0 the main line works on both V1 and V2 hosts — no separate dist-tag is needed:
-
-```jsonc
-{
-  "plugin": [
-    "opencode-windows-encoding@latest"
-  ]
-}
-```
-
-The default export is a combined `{ id, server, setup }` module:
-
-- **V1 hosts** (opencode ≤ 1.17, or a local path reference on 1.18.x) call `server` and inject via `tool.execute.before`.
-- **V2 hosts** validate `id` + `setup`. The setup registers the `shell create.before` hook on hosts that expose a shell hook domain (contract verified against the opencode dev branch; the resolved shell is provided directly on `event.shell`, so no `config.shell` lookup is needed). On V2 hosts without the shell domain (e.g. opencode 1.18.x) the setup degrades to a no-op — the plugin loads cleanly and activates automatically once the host gains the hook.
-
-> Note: the legacy `beta` dist-tag (`opencode-windows-encoding@beta`) is deprecated — the main line supersedes it.
+Then run `opencode` — or reload plugins with `opencode plugin reload`. All subsequent shell commands will use UTF-8 encoding automatically. Verify with `opencode plugin list`.
 
 ## Local Usage (Copy & Go)
 
-The built V1 plugin is a single self-contained JavaScript file (the shared core is bundled inline). From a clone of this repo:
+The built plugin is a single self-contained ESM file. From a clone of this repo:
 
 ```bash
 npm install && npm run build
 ```
 
-Then copy `dist/v1.js` to OpenCode's plugins directory **with a `.ts` extension** (opencode 1.18.x auto-discovery resolves `.js` files unreliably on Windows; the bundled output is plain ESM JavaScript, which loads fine as `.ts`):
-
 **PowerShell:**
 ```powershell
-Copy-Item dist/v1.js $env:USERPROFILE/.config/opencode/plugins/utf8-encoding.ts
+Copy-Item dist/index.js $env:USERPROFILE/.config/opencode/plugins/utf8-encoding.js
 ```
 
 **Bash / WSL:**
 ```bash
-cp dist/v1.js ~/.config/opencode/plugins/utf8-encoding.ts
+cp dist/index.js ~/.config/opencode/plugins/utf8-encoding.js
 ```
 
 Restart OpenCode to apply.
 
-The built file uses only Node.js built-ins (`node:fs`, `node:os`, `node:path`) and a compile-time-only `import type` from `@opencode-ai/plugin` — zero npm runtime dependencies.
-## Requirements
-
-- **OpenCode** (any recent version with plugin support)
-- **Windows** (this plugin is designed specifically for Windows encoding issues)
-- **Any of**: PowerShell 7+ (`pwsh`), Bash, or Command Prompt (`cmd`)
+The built file uses only Node.js built-ins (`node:fs`, `node:os`, `node:path`) — `@opencode/plugin` is `import type` only (compile-time, erased from output). Zero npm runtime dependencies.
 
 ## Development
 
@@ -133,10 +109,11 @@ npm run dev
 ### Local Development Testing
 
 Reference the source file directly:
+
 ```jsonc
 {
-  "plugin": [
-    "/path/to/opencode-windows-encoding/src/v1.ts"
+  "plugins": [
+    "/path/to/opencode-windows-encoding/src/index.ts"
   ]
 }
 ```

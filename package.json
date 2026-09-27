@@ -1,14 +1,12 @@
 {
   "name": "opencode-windows-encoding",
   "version": "5.0.0",
-  "description": "OpenCode plugin to fix UTF-8 encoding issues in PowerShell on Windows",
+  "description": "OpenCode V2 plugin to fix UTF-8 encoding issues in PowerShell on Windows",
   "type": "module",
-  "main": "./dist/v1.js",
-  "types": "./dist/v1.d.ts",
+  "main": "./dist/index.js",
   "exports": {
     ".": {
-      "types": "./dist/v1.d.ts",
-      "import": "./dist/v1.js"
+      "import": "./dist/index.js"
     }
   },
   "files": [
@@ -18,8 +16,7 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run build",
-    "publish:beta": "node scripts/publish-v2.mjs"
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "opencode",
@@ -36,7 +33,7 @@
   },
   "license": "AGPL-3.0",
   "devDependencies": {
-    "@opencode-ai/plugin": "^1.17.11",
+    "@opencode/plugin": "^2.0.18",
     "@types/node": "^22.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.8.0"

@@ -36,20 +36,19 @@ npm run dev
 ```
 src/
 ├── encoding-core.ts  # Shared core — encoding map / shell detection / prefix injection
-├── v1.ts             # V1 entry (tool.execute.before hook)
-└── v2.ts             # V2 entry ({ id, setup } contract, shell create.before hook)
+└── index.ts          # V2 entry — default export { id, setup } (shell create.before hook)
 ```
 
-Each entry bundles the shared core inline and builds to a self-contained file in `dist/` (`v1.js`, `v2.js`).
+The entry bundles the shared core inline and builds to a self-contained `dist/index.js`.
 
 ## Code Style
 
 - **Strict TypeScript** — `tsconfig.json` enforces strict mode. No `as any`,
   no `@ts-ignore`.
 - **Zero npm runtime dependencies** — the plugin uses only Node.js built-ins
-  (`node:fs`, `node:os`, `node:path`). `@opencode-ai/plugin` is `import type`
+  (`node:fs`, `node:os`, `node:path`). `@opencode/plugin` is `import type`
   only (compile-time, erased from output).
-- Match existing patterns — follow the code already in `src/v1.ts`.
+- Match existing patterns — follow the code already in `src/index.ts`.
 - Debug logging goes to `$TMP/utf8-plugin.log` and is gated behind
   `OPENCODE_UTF8_DEBUG=1`.
 
@@ -69,8 +68,8 @@ Reference the source file directly in your `opencode.jsonc`:
 
 ```jsonc
 {
-  "plugin": [
-    "/path/to/opencode-windows-encoding/src/v1.ts"
+  "plugins": [
+    "/path/to/opencode-windows-encoding/src/index.ts"
   ]
 }
 ```
