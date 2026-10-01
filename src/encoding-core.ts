@@ -20,6 +20,8 @@ export function flog(msg: string) {
 export type ShellKind = "pwsh" | "bash" | "cmd"
 
 // ── 各 shell 的 UTF-8 编码前缀与命令分隔符 ──
+// marker 为锚定前缀：仅当命令以已注入的前缀开头时才判重，
+// 命令文本中仅提及 marker 字样（如 echo "$LC_ALL"）不得误判跳过
 export const ENC: Record<ShellKind, { prefix: string; sep: string; marker: string }> = {
   pwsh: {
     prefix:
@@ -27,17 +29,17 @@ export const ENC: Record<ShellKind, { prefix: string; sep: string; marker: strin
       "$OutputEncoding=[Text.Encoding]::UTF8;" +
       "$env:PYTHONIOENCODING='utf-8';",
     sep: "\n",
-    marker: "OutputEncoding",
+    marker: "[Console]::OutputEncoding=",
   },
   bash: {
     prefix: "export LC_ALL=C.UTF-8; export LANG=C.UTF-8; export PYTHONIOENCODING=utf-8;",
     sep: "\n",
-    marker: "LC_ALL",
+    marker: "export LC_ALL=",
   },
   cmd: {
     prefix: "chcp 65001 >nul",
     sep: " & ",
-    marker: "chcp",
+    marker: "chcp 65001",
   },
 }
 
@@ -69,8 +71,8 @@ export function injectUtf8Prefix(cmd: string, kind: ShellKind): string | undefin
 
   const { prefix, sep, marker } = ENC[kind]
 
-  // 防止重复注入
-  if (cleanCmd.includes(marker)) { flog("  skip (idempotent)"); return undefined }
+  // 防止重复注入：锚定匹配（前缀必须出现在命令开头）
+  if (cleanCmd.startsWith(marker)) { flog("  skip (idempotent)"); return undefined }
 
   return prefixes + prefix + sep + cleanCmd
 }
